@@ -46,11 +46,14 @@ const resolvers = {
 
                         // console.log(vehicle)
                         const routeId = vehicle.routeNumber;
-                        const vtime = queryTime;
+                        const vtime = Math.floor(Number(queryTime)/1000);
                         const vehicleID = vehicle.vehicleID;
                         const tempVehicleTime = vehicleID+'_'+vtime;
+                        const vehicleTIme = Math.floor(Number(vehicle.time)/1000);
 
-                        const secsSinceReport = Math.floor((Number(vtime)-Number(vehicle.time))/1000);
+                        const secsSinceReport = (vtime-vehicleTIme);
+
+                        vehicle.time = vehicleTIme;
 
                         vehicle.secsSinceReport = secsSinceReport;
 
