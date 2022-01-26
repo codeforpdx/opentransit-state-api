@@ -1,17 +1,16 @@
 scalar BigInt
 
 type VehicleState {
-    vid: String
-    did: String
-    lat: Float
-    lon: Float
-    heading: Int
-    secsSinceReport: Int
-    numCars: Int
-    tripId: String
-    stopIndex: Int
-    stopId: String
-    status: Int
+    vehicleID: String
+    direction: String
+    latitude: Float
+    longitude: Float
+    bearing: Int
+    tripID: String
+    nextStopSeq: Int
+    lastStopSeq: Int
+    time: BigInt
+    secsSinceReport: BigInt
 }
 
 type RouteState {

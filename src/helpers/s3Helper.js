@@ -7,20 +7,31 @@ const s3 = new AWS.S3();
 const s3Bucket = process.env.TRYNAPI_S3_BUCKET || "orion-vehicles";
 console.log(`Reading state from s3://${s3Bucket}`);
 
+function convertTZ(date, tzString) {
+  return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));   
+}
+
 /*
- * Gets bucket prefix at the minute-level
+ * Gets bucket prefix at the hour-level
+ * Note to Jesse - I changed the bucket structure
+ * when we switch to a new bucket (code for PDX owned)
+ * we could switch it back. For now, it's not great
+ * but I think it's not the source of the problem.
+ * see getVehiclePaths - I think the function is 
+ * not as fast as it could be but it works
  * @param agencyId - String
  * @param currentTime - Number
  * @return prefix - String
  */
-function getBucketMinutePrefix(agencyId, currentTime) {
+function getBucketHourPrefix(agencyId, currentTime) {
   const currentDateTime = new Date(Number(currentTime * 1000));
-  const year = currentDateTime.getUTCFullYear();
-  const month = currentDateTime.getUTCMonth()+1;
-  const day = currentDateTime.getUTCDate();
-  const hour = currentDateTime.getUTCHours();
-  const minute = currentDateTime.getUTCMinutes();
-  return `${agencyId}/${year}/${month}/${day}/${hour}/${minute}/`;
+  const pacificDateTime = convertTZ(currentDateTime, 'America/Los_Angeles');
+  const year = pacificDateTime.getFullYear();
+  const month = String(pacificDateTime.getMonth()+1).padStart(2, '0');
+  const day = String(pacificDateTime.getUTCDate()).padStart(2, '0');
+  const hour = String(pacificDateTime.getUTCHours()).padStart(2, '0');
+  // console.log('looking at bucket year %i, month %i, day %i, hour %i', year, month, day, hour);
+  return `${agencyId}/${year}/${month}/${day}/${hour}/`;
 }
 
 function getS3Paths(prefix) {
@@ -49,11 +60,13 @@ async function getVehiclePaths(agencyId, startEpoch, endEpoch) {
   }
   // Idea: there are 1440 minutes in a day, and the API return at most 1-2 days,
   // so we can iterate every minute (as we have to get each file individually anyways)
-  let minutePrefixes = [];
+  let hourPrefixes = [];
   for (let time = startEpoch; time < endEpoch; time += 60) {
-    minutePrefixes.push(getBucketMinutePrefix(agencyId, time));
+    hourPrefixes.push(getBucketHourPrefix(agencyId, time));
   }
-  let files = _.flatten(await Promise.all(minutePrefixes.map(prefix => getS3Paths(prefix))));
+  let uniquehourPrefixes = [...new Set(hourPrefixes)];
+  // console.log(uniquehourPrefixes)
+  let files = _.flatten(await Promise.all(uniquehourPrefixes.map(prefix => getS3Paths(prefix))));
 
   let timestampsMap = {};
   let res = [];
@@ -65,8 +78,10 @@ async function getVehiclePaths(agencyId, startEpoch, endEpoch) {
          res.push(key);
      }
   });
+  // console.log(res)
   return res;
 }
+
 
 // unzip the gzip data
 function decompressData(data) {
@@ -90,10 +105,7 @@ async function getVehicles(agencyId, startEpoch, endEpoch) {
           if (err) {
               reject(err);
           } else {
-              const timestamp = getTimestamp(key);
-              decompressData(data.Body)
-                .then(decodedData =>
-                  resolve(insertTimestamp(timestamp, decodedData)));
+              resolve(decompressData(data.Body));
           }
         });
       });
@@ -102,22 +114,8 @@ async function getVehicles(agencyId, startEpoch, endEpoch) {
 
 function getTimestamp(key) {
     const keyParts = key.split('-');
-    return Math.floor(Number(keyParts[keyParts.length - 1].split('.json')[0])/1000);
-}
-
-/*
- * The API defines timestamp (epoch time in seconds) as a field for each vehicle,
- * which was also a column in Cassandra.
- * Since the timestamp is in the key in S3, that field does not exist,
- * thus we have to add it in the S3Helper to maintain compatibility
- */
-function insertTimestamp(timestamp, vehicles) {
-  return vehicles.map(vehicle => {
-    return {
-      ...vehicle,
-      timestamp: timestamp,
-    };
-  });
+    const raw_timestamp = Number(keyParts[keyParts.length - 1].split('.json')[0])
+    return raw_timestamp;
 }
 
 module.exports = {
