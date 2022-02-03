@@ -1,7 +1,10 @@
-# replace "marin" with "muni" to use that as the agency
+# replace "trimet" with your agency
 
 query {
-  state(agencyId: "marin", startTime: 1572127400, endTime: 1572127900) {
+  state(agencyId: "trimet"
+    , startTime: 1642867201
+    , endTime: 1642867500
+    , routes: ["100"]) {
     agencyId
     startTime
     routes {
@@ -9,10 +12,14 @@ query {
       states {
         timestamp
         vehicles {
-          vid
-          lat
-          lon
-          heading
+          vehicleID
+          tripID
+          latitude
+          longitude
+          direction
+          bearing
+          time
+          secsSinceReport
         }
       }
     }
