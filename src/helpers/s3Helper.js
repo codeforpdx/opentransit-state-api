@@ -73,8 +73,20 @@ async function getVehiclePaths(agencyId, startEpoch, endEpoch) {
 
 // unzip the gzip data
 function decompressData(data) {
-  return new Promise((resolve, _) => {
-    return zlib.unzip(data, (_, decoded) => resolve(JSON.parse(decoded.toString())));
+  return new Promise((resolve, reject) => {
+    return zlib.unzip(data, (err, decoded) => {
+      if (err) {
+        reject(err);
+      } else {
+        var parsedData;
+        try {
+          parsedData = JSON.parse(decoded.toString());
+        } catch (e) {
+          reject(e);
+        }
+        resolve(parsedData);
+      }
+    });
   });
 }
 
@@ -91,7 +103,7 @@ async function getVehicles(agencyId, startEpoch, endEpoch) {
           Key: key,
         }, (err, data) => {
           if (err) {
-              reject(err);
+            reject(err);
           } else {
               const timestamp = getTimestamp(key);
               decompressData(data.Body)
@@ -99,6 +111,8 @@ async function getVehicles(agencyId, startEpoch, endEpoch) {
                   resolve(insertTimestamp(timestamp, decodedData)));
           }
         });
+      }).catch((err) => {
+        return Promise.reject(`Error loading s3://${s3Bucket}/${key}: ${err}`);
       });
   })));
 }
