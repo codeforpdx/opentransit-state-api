@@ -8,7 +8,7 @@ const s3Bucket = process.env.TRYNAPI_S3_BUCKET || "orion-vehicles";
 console.log(`Reading state from s3://${s3Bucket}`);
 
 function convertTZ(date, tzString) {
-  return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));   
+  return new Date((typeof date === "string" ? new Date(date) : date).toLocaleString("en-US", {timeZone: tzString}));
 }
 
 /*
@@ -17,7 +17,7 @@ function convertTZ(date, tzString) {
  * when we switch to a new bucket (code for PDX owned)
  * we could switch it back. For now, it's not great
  * but I think it's not the source of the problem.
- * see getVehiclePaths - I think the function is 
+ * see getVehiclePaths - I think the function is
  * not as fast as it could be but it works
  * @param agencyId - String
  * @param currentTime - Number
@@ -85,8 +85,20 @@ async function getVehiclePaths(agencyId, startEpoch, endEpoch) {
 
 // unzip the gzip data
 function decompressData(data) {
-  return new Promise((resolve, _) => {
-    return zlib.unzip(data, (_, decoded) => resolve(JSON.parse(decoded.toString())));
+  return new Promise((resolve, reject) => {
+    return zlib.unzip(data, (err, decoded) => {
+      if (err) {
+        reject(err);
+      } else {
+        var parsedData;
+        try {
+          parsedData = JSON.parse(decoded.toString());
+        } catch (e) {
+          reject(e);
+        }
+        resolve(parsedData);
+      }
+    });
   });
 }
 
@@ -103,11 +115,13 @@ async function getVehicles(agencyId, startEpoch, endEpoch) {
           Key: key,
         }, (err, data) => {
           if (err) {
-              reject(err);
+            reject(err);
           } else {
-              resolve(decompressData(data.Body));
+            resolve(decompressData(data.Body));
           }
         });
+      }).catch((err) => {
+        return Promise.reject(`Error loading s3://${s3Bucket}/${key}: ${err}`);
       });
   })));
 }
