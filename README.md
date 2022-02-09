@@ -81,16 +81,13 @@ State of a particular vehicle at a particular time. Some fields may be null if n
 
 | Field Name | Type | Description |
 | --- | --- | --- |
-| `vid` | `String` | ID of this vehicle. |
-| `did` | `String` | ID of the direction the vehicle reported it was going. |
-| `lat` | `Float` | Reported latitude of vehicle. |
-| `lon` | `Float` | Reported longitude of vehicle. |
-| `heading` | `Float` | Reported heading of vehicle in degrees. |
+| `vehicleID` | `String` | ID of this vehicle. |
+| `direction` | `String` | ID of the direction the vehicle reported it was going. |
+| `latitude` | `Float` | Reported latitude of vehicle. |
+| `longitude` | `Float` | Reported longitude of vehicle. |
+| `bearing` | `Float` | Reported heading of vehicle in degrees. |
 | `secsSinceReport` | `Int` | Number of seconds old this observation was when it was retrieved (at `timestamp` of `RouteState`). |
-| `numCars` | `Int` | Number of cars in this vehicle. |
-| `stopIndex` | `Int` | The index of the current stop in the sequence (GTFS-realtime providers only) |
-| `status` | `Int` | 0 if the vehicle is about to arrive at the stop referred to by `stopIndex`, 1 if the vehicle is stopped at this stop, 2 if the vehicle is in transit to this stop (GTFS-realtime providers only) |
-| `tripId` | `String` | ID of the trip the vehicle reported it was running (GTFS-realtime providers only) |
+| `tripID` | `String` | ID of the trip the vehicle reported it was running (GTFS-realtime providers only) |
 
 ## Sample Query
 
@@ -98,7 +95,10 @@ Once you run it, go to http://localhost:4000/graphql in your browser and run thi
 
 ```
 query {
-  state(agencyId: "muni", startTime: 1572105600, endTime: 1572112800, routes: ["14", "19", "49"]) {
+  state(agencyId: "trimet"
+    , startTime: 1642867201
+    , endTime: 1642867500
+    , routes: ["100"]) {
     agencyId
     startTime
     routes {
@@ -106,10 +106,14 @@ query {
       states {
         timestamp
         vehicles {
-          vid
-          lat
-          lon
-          heading
+          vehicleID
+          tripID
+          latitude
+          longitude
+          direction
+          bearing
+          time
+          secsSinceReport
         }
       }
     }

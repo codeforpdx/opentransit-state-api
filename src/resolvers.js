@@ -18,65 +18,74 @@ const resolvers = {
 
             let { startTime, endTime } = params;
 
-            const vehicles = await s3Helper.getVehicles(agencyId, startTime, endTime);
+            console.log(agencyId, routes)
+
+            const resultSets = await s3Helper.getVehicles(agencyId, startTime, endTime);
+
 
             const vehiclesByTripByTime = {};
             const vehiclesByRouteByTime = {};
+            const UniqueVehicleTimeKeys = {};
 
             // group the vehicles by route, and then by time
+            // below are fields in the vehicle api response
+            // 'serviceDate', 'latitude', 'nextStopSeq', 'type', 'blockID',
+//         'signMessageLong', 'lastLocID', 'nextLocID', 'locationInScheduleDay',
+//         'longitude', 'direction', 'routeNumber', 'bearing', 'garage', 'tripID',
+//         'delay', 'lastStopSeq', 'vehicleID', 'time'
 
-            vehicles.forEach(vehicle => {
-                const routeId = vehicle.rid;
-                const vtime = vehicle.timestamp;
+            
 
-                if (!vehiclesByRouteByTime[routeId]) {
-                    vehiclesByRouteByTime[routeId] = {};
-                }
-                if (!vehiclesByRouteByTime[routeId][vtime]) {
-                    vehiclesByRouteByTime[routeId][vtime] = [];
-                }
+                resultSets.forEach(results => {
 
-                // check for multiple vehicles with the same tripId, assume to be multiple-car trains if close to each other
-                const tripId = vehicle.tripId;
-                if (tripId) {
-                    if (!vehiclesByTripByTime[tripId]) {
-                        vehiclesByTripByTime[tripId] = {};
-                    }
-                    const prevVehicle = vehiclesByTripByTime[tripId][vtime];
-                    if (!prevVehicle) {
-                        vehiclesByTripByTime[tripId][vtime] = vehicle;
-                    } else if (Math.abs(prevVehicle.lat - vehicle.lat) < 0.001 && Math.abs(prevVehicle.lon - vehicle.lon) < 0.001) {
-                        // 0.001 degrees latitude = 111m, 0.001 degrees longitude typically between between ~50m and 111m
-                        prevVehicle.numCars = (prevVehicle.numCars || 1) + 1;
-                        if (prevVehicle.vid > vehicle.vid) {
-                            prevVehicle.vid = vehicle.vid;
+                    const queryTime = results.resultSet.queryTime;
+
+                    if (!(results.resultSet['vehicle']===undefined)) {
+
+                    results.resultSet.vehicle.forEach(vehicle => {
+
+                        // console.log(vehicle)
+                        const routeId = vehicle.routeNumber;
+                        const vtime = Math.floor(Number(queryTime)/1000);
+                        const vehicleID = vehicle.vehicleID;
+                        const tempVehicleTime = vehicleID+'_'+vtime;
+                        const vehicleTIme = Math.floor(Number(vehicle.time)/1000);
+
+                        const secsSinceReport = (vtime-vehicleTIme);
+
+                        vehicle.time = vehicleTIme;
+
+                        vehicle.secsSinceReport = secsSinceReport;
+
+                        if (!vehiclesByRouteByTime[routeId]) {
+                            vehiclesByRouteByTime[routeId] = {};
                         }
-                        return;
-                    }
+                        if (!vehiclesByRouteByTime[routeId][vtime]) {
+                            vehiclesByRouteByTime[routeId][vtime] = [];
+                        }
+
+                        if (!UniqueVehicleTimeKeys[tempVehicleTime]) {
+                            vehiclesByRouteByTime[tempVehicleTime] = [];
+                            vehiclesByRouteByTime[routeId][vtime].push(vehicle);
+                        }
+
+                    });
+
+                    
+
+
+                    
+                    
+                    
                 }
-
-                vehiclesByRouteByTime[routeId][vtime].push(vehicle);
+                
             });
-
-            // remove duplicate Muni Metro vehicles
-            if (agencyId === 'muni') {
-                const affectedRouteIDs = ['KT', 'L', 'M', 'N', 'J'];
-                affectedRouteIDs.forEach(routeID => {
-                    if (debug) {
-                        console.log(routeID);
-                    }
-                    if (vehiclesByRouteByTime[routeID]) {
-                        vehiclesByRouteByTime[routeID] = removeMuniMetroDuplicates(
-                            vehiclesByRouteByTime[routeID],
-                        );
-                    }
-                });
-            }
 
             // get all the routes
             const routeIDs = routes ?
                 _.intersection(routes, Object.keys(vehiclesByRouteByTime)) :
                 Object.keys(vehiclesByRouteByTime);
+
 
             return {
                 agencyId,
@@ -85,6 +94,7 @@ const resolvers = {
                 endTime,
                 vehiclesByRouteByTime
             };
+        
         },
     },
 
@@ -110,18 +120,23 @@ const resolvers = {
         }
     },
 
+            // list all available fields
+            // 'serviceDate', 'latitude', 'nextStopSeq', 'type', 'blockID',
+//         'signMessageLong', 'lastLocID', 'nextLocID', 'locationInScheduleDay',
+//         'longitude', 'direction', 'routeNumber', 'bearing', 'garage', 'tripID',
+//         'delay', 'lastStopSeq', 'vehicleID', 'time'
+
     VehicleState: {
-        vid: vehicle => vehicle.vid,
-        did: vehicle => vehicle.did,
-        lat: vehicle => vehicle.lat,
-        lon: vehicle => vehicle.lon,
-        heading: vehicle => vehicle.heading,
+        vehicleID: vehicle => vehicle.vehicleID,
+        direction: vehicle => vehicle.direction,
+        latitude: vehicle => vehicle.latitude,
+        longitude: vehicle => vehicle.longitude,
+        bearing: vehicle => vehicle.bearing,
+        tripID: vehicle => vehicle.tripID,
+        nextStopSeq: vehicle => vehicle.nextStopSeq,
+        lastStopSeq: vehicle => vehicle.lastStopSeq,
+        time: vehicle => vehicle.time,
         secsSinceReport: vehicle => vehicle.secsSinceReport,
-        numCars: vehicle => vehicle.numCars,
-        tripId: vehicle => vehicle.tripId,
-        stopId: vehicle => vehicle.stopId,
-        stopIndex: vehicle => vehicle.stopIndex,
-        status: vehicle => vehicle.status,
     }
 };
 

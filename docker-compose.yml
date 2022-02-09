@@ -9,3 +9,5 @@ services:
       - "4000:4000"
     volumes:
       - ./src:/usr/src/app/src
+    environment:
+      TRYNAPI_S3_BUCKET: "opentransit-pdx"
