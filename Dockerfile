@@ -13,7 +13,7 @@ COPY . .
 CMD [ "npm", "start" ]
 
 # Build
-# docker build -t tryn-api .
+# docker build -t opentransit-state-api .
 
 # Run
-# docker run -p 4000:4000 tryn-api:latest
+# docker run -p 4000:4000 opentransit-state-api:latest

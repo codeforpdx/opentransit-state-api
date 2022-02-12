@@ -1,5 +1,5 @@
 {
-  "name": "tryn-api",
+  "name": "opentransit-state-api",
   "version": "1.0.0",
   "description": "API for historical transit vehicle location data",
   "private": true,
@@ -9,13 +9,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/trynmaps/tryn-api.git"
+    "url": "git+https://github.com/codeforpdx/opentransit-state-api.git"
   },
   "author": "Eddy",
   "bugs": {
-    "url": "https://github.com/trynmaps/tryn-api/issues"
+    "url": "https://github.com/codeforpdx/opentransit-state-api/issues"
   },
-  "homepage": "https://github.com/trynmaps/tryn-api#readme",
+  "homepage": "https://github.com/codeforpdx/opentransit-state-api",
   "dependencies": {
     "@creditkarma/graphql-loader": "^0.6.6",
     "@turf/turf": "^5.1.6",

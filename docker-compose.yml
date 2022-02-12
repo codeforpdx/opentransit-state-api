@@ -1,7 +1,7 @@
 version: "3.7"
 services:
-  tryn-api-dev:
-    container_name: tryn-api-dev
+  state-api-dev:
+    container_name: state-api-dev
     build:
       dockerfile: Dockerfile
       context: .

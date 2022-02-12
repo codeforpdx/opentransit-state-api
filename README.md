@@ -1,30 +1,26 @@
-# tryn-api
+# OpenTransit State API
 
 API for historical transit vehicle location data.
 
-tryn-api provides a GraphQL API for the data previously stored in S3 by Orion (https://github.com/trynmaps/orion).
+OpenTransit State API provides a GraphQL API for the data previously stored in S3 by OpenTransit Collector (https://github.com/codeforpdx/opentransit-collector).
 
 ## Getting Started
 
-See our welcome doc for contribution and deployment guidelines.
-https://bit.ly/opentransit-onboarding
-
 1. Clone this repo.
 
-2. Create a docker-compose.override.yml file that sets the environment variable TRYNAPI_S3_BUCKET to the name of the S3 bucket where data was stored by Orion,
-and provides AWS credentials with read access to that bucket. tryn-api reads data from S3 using the AWS credentials from the default locations,
+2. Create a docker-compose.override.yml file that sets the environment variable OPENTRANSIT_S3_BUCKET to the name of the S3 bucket where data was stored by OpenTransit Collector, and provides AWS credentials with read access to that bucket. The OpenTransit State API reads data from S3 using the AWS credentials from the default locations,
 e.g. a credentials file located within the Docker container at /root/.aws/credentials (using the default profile or a profile named by AWS_PROFILE),
 or using the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. For example:
 
 ```
 version: "3.7"
 services:
-  tryn-api-dev:
+  state-api-dev:
     volumes:
       - ../.aws:/root/.aws
     environment:
       AWS_PROFILE: "default"
-      TRYNAPI_S3_BUCKET: "my-opentransit-bucket"
+      OPENTRANSIT_S3_BUCKET: "my-opentransit-bucket"
 ```
 
 2. Run `docker-compose up`
@@ -45,7 +41,7 @@ The root query object for the API.
 
 | Parameter Name | Type | Description |
 | --- | --- | --- |
-| `agency` | `String!` | ID of the agency. The agency ID should be the same ID used in the configuration for Orion. |
+| `agency` | `String!` | ID of the agency. The agency ID should be the same ID used in the configuration for OpenTransit Collector. |
 | `startTime` | `BigInt!` | Start timestamp in seconds since the Unix epoch. |
 | `endTime` | `BigInt!` | End timestamp in seconds since the Unix epoch , exclusive. |
 | `routes` | `[String!]` | List of route IDs to return vehicle data. |
@@ -54,7 +50,7 @@ The root query object for the API.
 
 | Field Name | Type | Description |
 | --- | --- | --- |
-| `agencyId` | `String` | ID of the agency. The agency ID should be the same ID used in the configuration for Orion. |
+| `agencyId` | `String` | ID of the agency. The agency ID should be the same ID used in the configuration for OpenTransit Collector. |
 | `startTime` | `BigInt` | Start timestamp in seconds since the Unix epoch. |
 | `endTime` | `BigInt` | End timestamp in seconds since the Unix epoch, exclusive. |
 | `routes` | [`[RouteHistory]`](#routehistory) | Array of historical state for each route. |
@@ -117,4 +113,4 @@ query {
 }
 ```
 
-Substitute startTime and endTime with epoch timestamps (in seconds) corresponding to when Orion was actually running.
+Substitute startTime and endTime with epoch timestamps (in seconds) corresponding to when OpenTransit Collector was actually running.

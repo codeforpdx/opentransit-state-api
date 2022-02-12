@@ -2,12 +2,12 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   labels:
-    run: tryn-api
-  name: tryn-api
+    run: opentransit-state-api
+  name: opentransit-state-api
 spec:
   selector:
     matchLabels:
-      run: tryn-api
+      run: opentransit-state-api
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -16,16 +16,18 @@ spec:
   template:
     metadata:
       labels:
-        run: tryn-api
+        run: opentransit-state-api
     spec:
       containers:
-      - image: gcr.io/poetic-genius-233804/tryn-api:latest
+      - image: gcr.io/YOUR_GCP_PROJECT_ID/opentransit-state-api:latest
         imagePullPolicy: IfNotPresent
-        name: tryn-api
+        name: opentransit-state-api
         resources:
           requests:
             cpu: 0.03
         env:
+          - name: OPENTRANSIT_S3_BUCKET
+            value: YOUR_OPENTRANSIT_S3_BUCKET
           - name: AWS_ACCESS_KEY_ID
             valueFrom:
               secretKeyRef:

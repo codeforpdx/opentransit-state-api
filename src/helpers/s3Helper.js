@@ -4,7 +4,10 @@ var zlib = require('zlib');
 
 const s3 = new AWS.S3();
 
-const s3Bucket = process.env.TRYNAPI_S3_BUCKET || "orion-vehicles";
+const s3Bucket = process.env.OPENTRANSIT_S3_BUCKET;
+if (!s3Bucket) {
+  throw new Error("Missing OPENTRANSIT_S3_BUCKET environment variable");
+}
 console.log(`Reading state from s3://${s3Bucket}`);
 
 /*
@@ -123,4 +126,3 @@ function insertTimestamp(timestamp, vehicles) {
 module.exports = {
   getVehicles,
 };
-
