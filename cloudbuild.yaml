@@ -1,16 +1,16 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/tryn-api:$REVISION_ID', '.' ]
+  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/opentransit-state-api:$REVISION_ID', '.' ]
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', 'gcr.io/$PROJECT_ID/tryn-api:$REVISION_ID' ]
+  args: [ 'push', 'gcr.io/$PROJECT_ID/opentransit-state-api:$REVISION_ID' ]
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'tag', 'gcr.io/$PROJECT_ID/tryn-api:$REVISION_ID', 'gcr.io/$PROJECT_ID/tryn-api:latest' ]
+  args: [ 'tag', 'gcr.io/$PROJECT_ID/opentransit-state-api:$REVISION_ID', 'gcr.io/$PROJECT_ID/opentransit-state-api:latest' ]
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', 'gcr.io/$PROJECT_ID/tryn-api:latest' ]
+  args: [ 'push', 'gcr.io/$PROJECT_ID/opentransit-state-api:latest' ]
 - name: 'gcr.io/cloud-builders/kubectl'
-  args: [ 'set', 'image', 'deployment/tryn-api', 'tryn-api=gcr.io/$PROJECT_ID/tryn-api:$REVISION_ID' ]
+  args: [ 'set', 'image', 'deployment/opentransit-state-api', 'opentransit-state-api=gcr.io/$PROJECT_ID/opentransit-state-api:$REVISION_ID' ]
   env:
   - 'CLOUDSDK_COMPUTE_ZONE=${_COMPUTE_ZONE}'
   - 'CLOUDSDK_CONTAINER_CLUSTER=${_CONTAINER_CLUSTER}'
 images:
-- 'gcr.io/$PROJECT_ID/tryn-api:$REVISION_ID'
+- 'gcr.io/$PROJECT_ID/opentransit-state-api:$REVISION_ID'

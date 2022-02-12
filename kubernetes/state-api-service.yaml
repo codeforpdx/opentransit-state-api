@@ -2,13 +2,13 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    run: tryn-api
-  name: tryn-api
+    run: opentransit-state-api
+  name: opentransit-state-api
 spec:
   ports:
   - protocol: "TCP"
     port: 80
     targetPort: 4000
   selector:
-    run: tryn-api
+    run: opentransit-state-api
   type: LoadBalancer
