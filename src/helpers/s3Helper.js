@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 var zlib = require('zlib');
+const { DateTime } = require("luxon");
 
 const s3 = new AWS.S3();
 
@@ -10,20 +11,18 @@ if (!s3Bucket) {
 }
 console.log(`Reading state from s3://${s3Bucket}`);
 
+const stateVersion = 'v1';
+
 /*
  * Gets bucket prefix at the minute-level
  * @param agencyId - String
- * @param currentTime - Number
+ * @param timestamp - Number (Unix timestamp in seconds)
  * @return prefix - String
  */
-function getBucketMinutePrefix(agencyId, currentTime) {
-  const currentDateTime = new Date(Number(currentTime * 1000));
-  const year = currentDateTime.getUTCFullYear();
-  const month = currentDateTime.getUTCMonth()+1;
-  const day = currentDateTime.getUTCDate();
-  const hour = currentDateTime.getUTCHours();
-  const minute = currentDateTime.getUTCMinutes();
-  return `${agencyId}/${year}/${month}/${day}/${hour}/${minute}/`;
+function getBucketHourPrefix(agencyId, timestamp) {
+  const dateTime = DateTime.fromSeconds(timestamp, {zone:'UTC'});
+  const dateTimePathSegment = dateTime.toFormat('yyyy/MM/dd/HH');
+  return `state/${stateVersion}/${agencyId}/${dateTimePathSegment}/`;
 }
 
 function getS3Paths(prefix) {
@@ -50,13 +49,20 @@ async function getVehiclePaths(agencyId, startEpoch, endEpoch) {
   if (!endEpoch) {
     endEpoch = startEpoch + 60;
   }
-  // Idea: there are 1440 minutes in a day, and the API return at most 1-2 days,
-  // so we can iterate every minute (as we have to get each file individually anyways)
-  let minutePrefixes = [];
-  for (let time = startEpoch; time < endEpoch; time += 60) {
-    minutePrefixes.push(getBucketMinutePrefix(agencyId, time));
+  // There are typically about 4*60=240 state data files per hour,
+  // and the S3 API can return up to 1000 key names with a particular prefix
+  // (by default), so we can request all keys prefixed by each hour within
+  // the time range, then filter the resulting keys to make sure the timestamps
+  // are in the requested interval
+  let hourPrefixes = [];
+
+  // UTC hours always start with a timestamp at multiples of 3600 seconds
+  const startHour = startEpoch - (startEpoch % 3600);
+
+  for (let time = startHour; time < endEpoch; time += 3600) {
+    hourPrefixes.push(getBucketHourPrefix(agencyId, time));
   }
-  let files = _.flatten(await Promise.all(minutePrefixes.map(prefix => getS3Paths(prefix))));
+  let files = _.flatten(await Promise.all(hourPrefixes.map(prefix => getS3Paths(prefix))));
 
   let timestampsMap = {};
   let res = [];
@@ -118,7 +124,7 @@ async function getVehicles(agencyId, startEpoch, endEpoch) {
 }
 
 function getTimestamp(key) {
-    const keyParts = key.split('-');
+    const keyParts = key.split('_');
     return Math.floor(Number(keyParts[keyParts.length - 1].split('.json')[0])/1000);
 }
 
